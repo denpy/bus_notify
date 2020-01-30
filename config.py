@@ -1,0 +1,8 @@
+from local_config import PUSHOVER_TOKEN, PUSHOVER_USER
+
+assert PUSHOVER_TOKEN, PUSHOVER_USER
+
+# Bus stops IDs and line numbers
+HOME_BUS_STOP_ID = '33326'
+WORK_BUS_STOP_ID = '25141'
+BUS_LINE_NAMES = ['74', '174']

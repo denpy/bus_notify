@@ -1,0 +1,2 @@
+PUSHOVER_TOKEN='a6dvutumicnvuo7mhs1twnhisacwtb'
+PUSHOVER_USER='u9iun1uiaz6cch9uyr6m2uu8hrywd8'
