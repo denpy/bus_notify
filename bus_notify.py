@@ -16,16 +16,22 @@ from retry import retry
 
 from config import BUS_LINE_NAMES, HOME_BUS_STOP_ID, PUSHOVER_TOKEN, PUSHOVER_USER, WORK_BUS_STOP_ID
 
+# Basic logger
 logger.add(sys.stdout, format='{time} {level} {message}', filter='bus_notify', level='INFO')
 logger.add('/tmp/bus_notify_1.log', rotation='500 MB')
 
-TMPDIR = tempfile.gettempdir()
-CONTROL_FILE_URL = 'https://dl.dropboxusercontent.com/s/z3pd6zuyl5ckwy1/control.json'
-CONTROL_JSON_PATH = os.path.join(TMPDIR, 'control.json')
+STOP_NOTIFICATION_SENT = False
+
+# Control file
+CONTROL_FILE_BASENAME = 'control.json'
+CONTROL_JSON_PATH = os.path.join(tempfile.gettempdir(), CONTROL_FILE_BASENAME)
 
 # URLs
-NOTIFICATION_URL = f'https://api.pushover.net/1/messages.json?token={PUSHOVER_TOKEN}&user={PUSHOVER_USER}'
 BASE_URL = 'http://curlbus.app/'
+CONTROL_FILE_URL = f'https://dl.dropboxusercontent.com/s/z3pd6zuyl5ckwy1/{CONTROL_FILE_BASENAME}'
+NOTIFICATION_URL = f'https://api.pushover.net/1/messages.json?token={PUSHOVER_TOKEN}&user={PUSHOVER_USER}'
+
+# Bust stop
 URL_TO_HOME = os.path.join(BASE_URL, WORK_BUS_STOP_ID)
 URL_TO_WORK = os.path.join(BASE_URL, HOME_BUS_STOP_ID)
 
@@ -33,7 +39,6 @@ MIDWEEK_DAYS = (0, 1, 2, 3, 6)  # Mon, Tue, Wed, Thu, Sun
 SECONDS_IN_DAY = 24 * 60 * 60
 INTERVAL_BETWEEN_NOTIFICATIONS = 120
 COMMAND_POLL_INTERVAL = 10
-STOP_NOTIFICATION_SENT = False
 
 
 def send_notification(text: str):
