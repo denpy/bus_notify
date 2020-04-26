@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
 import requests
-from dateutil import parser
+from dateutil import parser, tz
 from dateutil.relativedelta import relativedelta
 from retry.api import retry_call
 
@@ -33,7 +33,7 @@ class BusEtaNotifier(ABC):
     def __init__(self, logger=logger):
         self.logger = logger
 
-    def _get_bus_etas(self, station_id: str, line_names: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    def _get_bus_etas(self, station_id: int, line_numbers: Optional[List[int]] = None) -> List[Dict[str, Any]]:
         etas = []
 
         # Get the data from Curlbus
@@ -41,46 +41,51 @@ class BusEtaNotifier(ABC):
         url = urljoin(self.CURLBUS_BASE_URL, station_id)
         res = requests.get(url, headers={'Accept': 'application/json'}, timeout=60)
         res_json = res.json()
-        # print(res_json)
 
-        eta_obj = dict(stattion_name=res_json['stop_info']['name']['EN'], errors=None)
         errors = res_json['errors']
-        if errors is not None:
-            eta_obj['errors'] = errors
-            etas.append(eta_obj)
+        if errors is not None and 'visits' not in res_json:
+            self.logger.error(f'Curlbus service returned errors: {errors}')
+            raise Exception(errors)
 
-        for info in res_json['visits'][station_id]:
-            line_name = int(info['line_name'])  # Curlbus calls the line number as "line_name" (str type)
-            if line_names and line_name not in line_names:
+        lines_info = res_json['visits'][station_id]
+        for info in lines_info:
+            eta_obj = dict(stattion_name=res_json['stop_info']['name']['EN'], errors=errors)
+            line_number = int(info['line_name'])  # Curlbus calls the line number as "line_name" (str type)
+            eta_obj['line_number'] = line_number
+            if line_numbers and line_number not in line_numbers:
                 continue
 
-            # Calculate how many minutes left from now until the bus arrives to the station
-            eta = relativedelta(parser.parse(info['eta']), datetime.now()).minutes
+            # Calculate how many minutes remained from now until the bus will arrive to the station
+            minutes_remained = relativedelta(parser.parse(info['eta']), datetime.now(tz.tzlocal())).minutes
 
             # Check maybe we already have an ETA for this line
-            for e in etas:
-                if line_name == e['line_name']:
-                    # We already have ETA for this line, let's append an another one to it
-                    e['etas'].append(eta)
+            is_line_in_etas = False
+            for eta in etas:
+                if line_number != eta['line_number']:
                     continue
 
-            # Update an object that contains an ETA info for this line and append it to the list of all ETAs
-            eta_obj['line_name'] = line_name
-            eta_obj['etas'] = [eta]
-            etas.append(eta_obj)
+                # We already have ETA for this line, let's append an another one to it
+                eta['etas'].append(minutes_remained)
+                is_line_in_etas = True
+                break
+
+            if not is_line_in_etas:
+                eta_obj['etas'] = [minutes_remained]
+                etas.append(eta_obj)
 
         return etas
 
     def _notify(self):
         control = self.get_control_dict()
 
-        # Validate "station_id" field exists
-        if not ('station_id' in control and control['station_id']):
-            err_msg = '"station_id" field must not be empty'
+        # Validate "station_id" field
+        station_id = control.get('station_id')
+        if not (station_id is not None and isinstance(station_id, int)):
+            err_msg = '"station_id" field value must not be an integer'
             self.logger.error(err_msg)
             raise ValueError(err_msg)
 
-        self.etas = self._get_bus_etas(control['station_id'], control.get('lines'))
+        self.etas = self._get_bus_etas(station_id, control.get('lines'))
         self.send_notification()
 
     def run(self, service_query_interval=CURLBUS_QUERY_INTERVAL):
@@ -102,9 +107,9 @@ class BusEtaNotifier(ABC):
         """
         Get a dict which contains an info for querying Curlbus service
         Control dict fields:
-        - "station_id" (mandatory) is a number that represents the bus station ID (can be found using Google maps)
-        - "lines" (optional) is a list of lines user is interested to get ETAs, if empty or not provided all lines ETAs
-          will be returned
+        - "station_id" (mandatory) is a number that represents a bus station ID (can be found using Google maps)
+        - "lines" (optional) is a list of line numbers FOO, if empty or not provided all lines ETAs will be
+        returned
         Example:
             {'station_id': 12345, 'lines': [21, 42]}
         :return: a dict with info for querying Curlbus service
