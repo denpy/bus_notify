@@ -1,4 +1,6 @@
 .idea/
 __pycache__/
+config.py
 local_config.py
+requirments_dev.txt
 tests/
