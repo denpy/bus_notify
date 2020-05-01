@@ -14,7 +14,7 @@ from dateutil.relativedelta import relativedelta
 from loguru import logger
 from retry import retry
 
-from config import BUS_LINE_NAMES, HOME_BUS_STOP_ID, PUSHOVER_TOKEN, PUSHOVER_USER, WORK_BUS_STOP_ID
+from eta_notifier.config import BUS_LINE_NAMES, HOME_BUS_STOP_ID, PUSHOVER_TOKEN, PUSHOVER_USER, WORK_BUS_STOP_ID
 
 # Basic logger
 logger.add(sys.stdout, format='{time} {level} {message}', filter='bus_notify', level='INFO')
