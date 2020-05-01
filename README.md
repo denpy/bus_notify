@@ -1,8 +1,13 @@
-# bus_notify
 A repository for the app which sends notifications about bus ETA.
 
-In order to make this work you have to implement two methods:
+#### Installation:
+1. Clone this repository.
+2. Create a new virtual environment and activate it.
+3. Run `pip install -r bus_notify/requirments.txt`
+4. Implement needed methods as described below.
 
+#### Mandatory methods to implement:
+In order to make this work you have to implement two methods:
 - "get_service_query_obj" has to return a need query parameter for Curlbus service (a bus station ID and
  optionally lines numbers) as dictionary.
  - "send_notification" implements a notification functionality.
