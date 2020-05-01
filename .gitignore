@@ -1,4 +1,4 @@
 .idea/
 __pycache__/
-eta_notifier/
+eta_notifier/*
 tests/
