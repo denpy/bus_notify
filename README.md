@@ -8,9 +8,16 @@ A repository for the app which sends notifications about bus ETA.
 
 #### Mandatory methods to implement:
 In order to make this work you have to implement two methods:
-- `get_service_query_obj` has to return a need query parameter for Curlbus service (a bus station ID and
- optionally lines numbers) as dictionary.
- - `send_notification` implements a notification functionality.
+- `get_service_query_obj` has to return a needed query parameter for Curlbus service as dictionary.
+
+    - Returned object may include two fields:
+        
+        - `station_id` is a mandatory field and its value is an integer that represent a bus station ID. 
+        - `lines` is an optional field and its value is a list that contains line numbers (integers). If the field is
+         not provided or the list is empty information about all lines will be returned otherwise only for lines in
+          the list.
+
+- `send_notification` implements a notification functionality.
  
  Example:
 ```python

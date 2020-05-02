@@ -89,6 +89,7 @@ class BusEtaNotifier(ABC):
         self.send_notification()
 
     def run(self, service_query_interval=CURLBUS_QUERY_INTERVAL):
+        sleep_period = max(service_query_interval, self.CURLBUS_QUERY_INTERVAL)
         while True:
             try:
                 retry_call(
@@ -100,7 +101,7 @@ class BusEtaNotifier(ABC):
             except Exception as exc:
                 self.logger.error(f'Failed to get data from Curlbus service. Reason: {exc}')
             self.logger.info(f'Next attempt to get ETA is in {service_query_interval} seconds.')
-            time.sleep(service_query_interval)
+            time.sleep(sleep_period)
 
     @abstractmethod
     def get_service_query_obj(self) -> Dict[str, Any]:
