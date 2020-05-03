@@ -85,7 +85,7 @@ class BusEtaNotifier(ABC):
             self.logger.error(err_msg)
             raise ValueError(err_msg)
 
-        self.etas = self._get_bus_etas(station_id, service_query_obj.get('lines'))
+        self.etas = self._get_bus_etas(station_id, service_query_obj.get('line_numbers'))
         self.send_notification()
 
     def run(self, service_query_interval=CURLBUS_QUERY_INTERVAL):
