@@ -21,32 +21,6 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s:%(levelname)s: %(message)s')
 
 
-class Timer(object):
-    """
-    FOO
-    """
-
-    def __init__(self):
-        self.start = None
-        self.end = None
-
-    def __enter__(self):
-        self.start = default_timer()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.end = default_timer()
-
-    @property
-    def elapsed(self):
-        if self.end is None:
-            # Still running, return the execution time until now
-            return round(default_timer() - self.start)
-
-        # Finished, return the total execution time
-        return round(self.end - self.start)
-
-
 class BusEtaNotifier(ABC):
     """
     A bus estimated time of arrival (ETA) notifier abstract class, for notifying about buses ETAs
@@ -54,7 +28,7 @@ class BusEtaNotifier(ABC):
 
     CURLBUS_BASE_URL = 'http://curlbus.app/'
     SECONDS_IN_MINUTE = 60
-    MIN_SERVICE_QUERY_INTERVAL = SECONDS_IN_MINUTE // 2
+    MIN_SERVICE_QUERY_INTERVAL = SECONDS_IN_MINUTE // 6  # 10 seconds
 
     # noinspection PyShadowingNames
     def __init__(self, logger=logger):
@@ -128,28 +102,29 @@ class BusEtaNotifier(ABC):
         self.send_notification()
 
     def run(self, service_query_interval=MIN_SERVICE_QUERY_INTERVAL):
-        # self.service_query_interval = max(service_query_interval, self.CURLBUS_QUERY_INTERVAL)
-        self.service_query_interval = service_query_interval
+        self.service_query_interval = max(service_query_interval, self.MIN_SERVICE_QUERY_INTERVAL)
         while True:
-            with Timer() as t:
-                try:
-                    retry_call(
-                        self._notify,
-                        tries=2,
-                        delay=1,
-                        max_delay=2 * self.SECONDS_IN_MINUTE,
-                        logger=self.logger)
-                except Exception as exc:
-                    self.logger.error(f'Failed to get data from Curlbus service. Reason: {exc}')
+            start = default_timer()
+            try:
+                retry_call(
+                    self._notify,
+                    tries=60,
+                    delay=1,
+                    max_delay=2 * self.SECONDS_IN_MINUTE,
+                    logger=self.logger)
+            except Exception as exc:
+                self.logger.error(f'Failed to get data from Curlbus service. Reason: {exc}')
 
-                # Calculate how long we should wait until next the next attempt to get ETAs
-                sleep_period = self.service_query_interval - t.elapsed
-                if sleep_period < 0:
-                    # If we got here i.e. it tool longer than service query interval to get the data and send
-                    # notification, in such case we should not sleep
-                    sleep_period = 0
-                self.logger.info(f'Next attempt to get ETA is in {sleep_period} seconds.')
+            elapsed = round(default_timer() - start)
+            if self.service_query_interval < elapsed:
+                # If we got here i.e. it took longer than service query interval to get the data and send the
+                # notification, in such case we should not sleep
+                logger.warning(f'It took {elapsed} sec to get the data and sent the notification, will not sleep.')
+                continue
 
+            # Calculate how long we should wait until next the next attempt to get ETAs
+            sleep_period = self.service_query_interval - elapsed
+            self.logger.info(f'Next attempt to get ETA is in {sleep_period} seconds.')
             time.sleep(sleep_period)
 
     @abstractmethod
