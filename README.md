@@ -1,4 +1,7 @@
-A simple abstract class for querying https://curlbus.app service periodically.  
+A simple abstract class for querying https://curlbus.app service periodically.
+
+https://curlbus.app is a service that provides an information about bus times arrivals for Israeli public transport
+service providers.
 
 #### Installation:
 1. Clone this repository.
@@ -25,6 +28,10 @@ from bus_eta_notifier import BusEtaNotifier
 
 
 class TestNotifier(BusEtaNotifier):
+    
+    def __init__(self):
+            super(TestNotifier, self).__init__()
+
     def get_service_query_obj(self):
         return {'station_id': 33326, 'line_numbers': [74, 174]}
 
