@@ -20,7 +20,7 @@ In order to make this work you have to implement two methods:
          field is not provided or the list is empty information about all lines will be returned otherwise only for
           lines in the list.
 
-- `send_notification` method implements a notification functionality.
+- `send_notification` is method that implements a notification functionality.
  
  Example:
 ```python
@@ -33,7 +33,7 @@ class TestNotifier(BusEtaNotifier):
             super(TestNotifier, self).__init__()
 
     def get_query_params_obj(self):
-        return {'station_id': 33326, 'line_numbers': [74, 174]}
+        return {'station_id': 12345, 'line_numbers': [21, 42]}
 
     def send_notification(self):
         print(self.etas)
@@ -45,7 +45,8 @@ if __name__ == '__main__':
 
 ```
 
-The query result will be stored in the `etas` property of the class and can be used in the `send_notification` method.
+The query result will be stored in the `etas` attribute of the class instance and can be used in the `send_notification
+` method.
 
 `etas` is a list that contains ETA objects.
 
@@ -61,7 +62,7 @@ ETA object fields:
 
 `errors` a list of error messages or `None`.
 
-`etas` a list of integers where each integer represent a number of minutes remained until the bus arrives to the
+`etas` a list of integers where each integer represents a number of minutes remained until the bus arrives to the
  station.
  
 `line_number` a line (bus) number.
