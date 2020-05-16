@@ -11,7 +11,7 @@ service providers.
 
 #### Mandatory methods to implement:
 In order to make this work you have to implement two methods:
-- `get_service_query_obj` method has to return a needed query parameter for Curlbus service as dictionary.
+- `get_query_params_obj` method has to return a needed query parameters for Curlbus service as a dictionary.
 
     - Returned object may include two fields:
         
@@ -32,7 +32,7 @@ class TestNotifier(BusEtaNotifier):
     def __init__(self):
             super(TestNotifier, self).__init__()
 
-    def get_service_query_obj(self):
+    def get_query_params_obj(self):
         return {'station_id': 33326, 'line_numbers': [74, 174]}
 
     def send_notification(self):
