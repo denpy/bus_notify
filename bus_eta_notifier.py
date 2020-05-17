@@ -32,35 +32,33 @@ class BusEtaNotifier(ABC):
     # noinspection PyShadowingNames
     def __init__(self, logger=logger):
         self.logger = logger
-        self.etas = []
+        self.etas = dict(errors=None, line_number_2_etas=dict())
 
     def _get_station_data(self, station_id: int) -> Dict[str, Any]:
-        # Clear "etas" list, so we'll not have items from the previous query
-        self.etas.clear()
-
         # Get the data from Curlbus service
-        station_id = str(station_id)
-        url = urljoin(self.CURLBUS_BASE_URL, station_id)
+        url = urljoin(self.CURLBUS_BASE_URL, str(station_id))
         res = requests.get(url, headers={'Accept': 'application/json'}, timeout=3)
         res_json = res.json()
         return res_json
 
     def _make_eta_objects(self, station_data_obj: Dict[str, Any], query_params_obj: Dict[str, int]):
+        # Clear "line_number_2_etas" object, so we'll not have items from the previous query
+        line_number_2_etas = self.etas['line_number_2_etas']
+        line_number_2_etas.clear()
+
         errors = station_data_obj['errors']
         if errors is not None:
+            self.etas['errors'] = errors
             self.logger.error(f'Curlbus service returned errors: {errors}')
             raise Exception(errors)
 
+        self.etas['station_city'] = station_data_obj['stop_info']['address']['city']
+        self.etas['station_name'] = station_data_obj['stop_info']['name']['EN']
         line_numbers = query_params_obj.get('line_numbers')
         station_id = str(query_params_obj['station_id'])
         for line_info in station_data_obj['visits'][station_id]:
-            eta_obj = dict(
-                errors=errors,
-                station_city=station_data_obj['stop_info']['address']['city'],
-                station_name=station_data_obj['stop_info']['name']['EN'],
-                timestamp=line_info['timestamp'])
+            self.etas['timestamp'] = line_info['timestamp']
             line_number = int(line_info['line_name'])  # Curlbus calls the line number as "line_name" (str type)
-            eta_obj['line_number'] = line_number
             if line_numbers and line_number not in line_numbers:
                 # Skip the current "line_number" since it's not in a list of line numbers we interested in
                 continue
@@ -73,22 +71,15 @@ class BusEtaNotifier(ABC):
             if minutes_remained < 0:
                 continue
 
-            # Check maybe we already have an ETA for this line
-            eta_already_exist = False
-            for eta_obj in self.etas:
-                if line_number != eta_obj['line_number']:
-                    continue
-
-                # We already have ETA for this line, let's append the current one
-                etas = eta_obj['etas']
+            # Check maybe we already have an ETA for this line, if we already have ETA for this line, let's append
+            # the current one. We do so because Curlbus does not aggregate ETAs and returns them as separate fields
+            if line_number in line_number_2_etas:
+                etas = line_number_2_etas[line_number]
                 etas.append(minutes_remained)
-                eta_obj['etas'] = sorted(list(set(etas)))
-                eta_already_exist = True
-                break
+                line_number_2_etas[line_number] = sorted(list(set(etas)))
+                continue
 
-            if not eta_already_exist:
-                eta_obj['etas'] = [minutes_remained]
-                self.etas.append(eta_obj)
+            line_number_2_etas[line_number] = [minutes_remained]
 
     def _notify(self):
         # Get needed parameters for querying Curlbus

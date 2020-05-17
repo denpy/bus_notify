@@ -46,25 +46,26 @@ if __name__ == '__main__':
 ```
 
 The query result will be stored in the `etas` attribute of the class instance and can be used in the `send_notification
-` method.
-
-`etas` is a list that contains ETA objects.
+` method. 
 
 Example of the `etas` property content:
 ```
-[{'errors': None,
-  'etas': [5],
-  'line_number': 21,
-  'stattion_name': 'Herzl/Sokolov'}]
+{'errors': None,
+ 'line_number_2_etas': {42: [0, 6, 12]},
+ 'station_city': 'Some city',
+ 'station_name': 'Some station name',
+ 'timestamp': '2020-05-17 15:45:03+03:00'}
 ```
 
 ETA object fields:
 
-`errors` a list of error messages or `None`.
+`errors` is field that contains errors returned by the Curlbus service or `None`.
 
-`etas` a list of integers where each integer represents a number of minutes remained until the bus arrives to the
- station.
- 
-`line_number` a line (bus) number.
+`line_number_2_etas` is a dict that contains a mapping between line numbers and its ETAs list. Note: `line_number_2_etas
+` keys are integers.
 
-`station_name`  a string that contains the name of the station.
+`line_number` is an integer that represents a line (bus) number.
+
+`station_name` is a string that contains the name of the station.
+
+`timestamp` is a string that contains the timestamp of the query. The format is "yyyy-mm-dd hh:mm:ss+UTC-Offset"
