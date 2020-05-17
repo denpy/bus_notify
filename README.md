@@ -30,7 +30,7 @@ from bus_eta_notifier import BusEtaNotifier
 class TestNotifier(BusEtaNotifier):
     
     def __init__(self):
-            super(TestNotifier, self).__init__()
+        super(TestNotifier, self).__init__()
 
     def get_query_params_obj(self):
         return {'station_id': 12345, 'line_numbers': [21, 42]}

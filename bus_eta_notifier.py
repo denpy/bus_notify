@@ -7,7 +7,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from timeit import default_timer
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 from urllib.parse import urljoin
 
 import requests
@@ -45,13 +45,15 @@ class BusEtaNotifier(ABC):
         res_json = res.json()
         return res_json
 
-    def _make_eta_objects(self, station_data_obj: Dict[str, Any], line_numbers: Optional[List[int]] = None):
+    def _make_eta_objects(self, station_data_obj: Dict[str, Any], query_params_obj: Dict[str, int]):
         errors = station_data_obj['errors']
         if errors is not None:
             self.logger.error(f'Curlbus service returned errors: {errors}')
             raise Exception(errors)
 
-        for line_info in station_data_obj['visits'][station_data_obj]:
+        line_numbers = query_params_obj.get('line_numbers')
+        station_id = str(query_params_obj['station_id'])
+        for line_info in station_data_obj['visits'][station_id]:
             eta_obj = dict(
                 errors=errors,
                 station_city=station_data_obj['stop_info']['address']['city'],
@@ -60,7 +62,7 @@ class BusEtaNotifier(ABC):
             line_number = int(line_info['line_name'])  # Curlbus calls the line number as "line_name" (str type)
             eta_obj['line_number'] = line_number
             if line_numbers and line_number not in line_numbers:
-                # Skip the current `line_number` since it's not in a list of line numbers we interested in
+                # Skip the current "line_number" since it's not in a list of line numbers we interested in
                 continue
 
             # Calculate how many minutes remained from now until the bus will arrive to the station
@@ -103,7 +105,7 @@ class BusEtaNotifier(ABC):
         station_data_obj = self._get_station_data(station_id)
 
         # Normalize etas format
-        self._make_eta_objects(station_data_obj)
+        self._make_eta_objects(station_data_obj, query_params_obj)
         self.send_notification()
 
     def run(self, service_query_interval=MIN_SERVICE_QUERY_INTERVAL):
