@@ -1,7 +1,7 @@
 #
-# Copyright 2020. All rights reserved.
+# Written by denpy in 2020.
+# https://github.com/denpy
 #
-
 import logging
 import time
 from abc import ABC, abstractmethod
@@ -16,8 +16,9 @@ from dateutil.relativedelta import relativedelta
 from retry.api import retry_call
 
 # Configure a minimal logger
+LOG_FORMAT = '%(asctime)s %(name)s:%(lineno)d:%(levelname)s: %(message)s'
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s:%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 
 class BusEtaNotifier(ABC):
@@ -56,9 +57,9 @@ class BusEtaNotifier(ABC):
         self.etas['station_name'] = station_data_obj['stop_info']['name']['EN']
         line_numbers = query_params_obj.get('line_numbers')
         station_id = str(query_params_obj['station_id'])
-        for line_info in station_data_obj['visits'][station_id]:
+        for line_info in sorted(station_data_obj['visits'][station_id], key=lambda info: int(info['line_name'])):
             self.etas['timestamp'] = line_info['timestamp']
-            line_number = int(line_info['line_name'])  # Curlbus calls the line number as "line_name" (str type)
+            line_number = int(line_info['line_name'])  # Curlbus calls the line number as "line_name" (it's a str)
             if line_numbers and line_number not in line_numbers:
                 # Skip the current "line_number" since it's not in a list of line numbers we interested in
                 continue
@@ -122,6 +123,9 @@ class BusEtaNotifier(ABC):
                 # notification, in such case we should not sleep
                 logger.warning(f'It took {elapsed} sec to get the data and sent the notification, will not sleep.')
                 continue
+
+            if service_query_interval == 0:
+                break
 
             # Calculate how long we should wait until the next attempt to get ETAs
             sleep_period = service_query_interval - elapsed

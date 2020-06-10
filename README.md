@@ -45,6 +45,9 @@ if __name__ == '__main__':
 
 ```
 
+Note: you can provide the `service_query_interval` parameter to the `run` method, it's amount of seconds we wait
+ between Curlbus queries. The default and minimal value us 10, if the value is 0 then a single query will be performed.
+
 The query result will be stored in the `etas` attribute of the class instance and can be used in the `send_notification
 ` method. 
 
