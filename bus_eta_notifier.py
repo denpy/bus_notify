@@ -7,7 +7,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from timeit import default_timer
-from typing import Any, Dict
+from typing import Any, Dict, List
 from urllib.parse import urljoin
 
 import requests
@@ -44,7 +44,7 @@ class BusEtaNotifier(ABC):
 
     def _make_eta_objects(self, station_data_obj: Dict[str, Any], query_params_obj: Dict[str, int]):
         # Clear "line_number_2_etas" object, so we'll not have items from the previous query
-        line_number_2_etas = self.etas['line_number_2_etas']
+        line_number_2_etas = self.etas['line_number_2_etas']  # type: Dict[int, List[int]]
         line_number_2_etas.clear()
 
         errors = station_data_obj['errors']
@@ -57,7 +57,10 @@ class BusEtaNotifier(ABC):
         self.etas['station_name'] = station_data_obj['stop_info']['name']['EN']
         line_numbers = query_params_obj.get('line_numbers')
         station_id = str(query_params_obj['station_id'])
-        for line_info in sorted(station_data_obj['visits'][station_id], key=lambda info: int(info['line_name'])):
+
+        # Sort the list of ETAs according to the line number
+        station_etas = sorted(station_data_obj['visits'][station_id], key=lambda info: int(info['line_name']))
+        for line_info in station_etas:
             self.etas['timestamp'] = line_info['timestamp']
             line_number = int(line_info['line_name'])  # Curlbus calls the line number as "line_name" (it's a str)
             if line_numbers and line_number not in line_numbers:
@@ -67,10 +70,10 @@ class BusEtaNotifier(ABC):
             # Calculate how many minutes remained from now until the bus will arrive to the station
             minutes_remained = relativedelta(parser.parse(line_info['eta']), datetime.now(tz.tzlocal())).minutes
 
-            # Sometimes amount of minutes remained maybe a negative number i.e. we calculated `minutes_remained`
-            # after the actual ETA, in this case we skip this ETA since it's not relevant
-            if minutes_remained < 0:
-                continue
+            # Sometimes amount of minutes remained maybe a negative number or 0 i.e. we calculated "minutes_remained"
+            # after the actual, in this case it usually means that the bus has arrived to the station or just has leaved
+            if minutes_remained <= 0:
+                minutes_remained = 0
 
             # Check maybe we already have an ETA for this line, if we already have ETA for this line, let's append
             # the current one. We do so because Curlbus does not aggregate ETAs and returns them as separate fields
@@ -88,15 +91,15 @@ class BusEtaNotifier(ABC):
 
         # Validate "station_id" field
         station_id = query_params_obj.get('station_id')
-        if not (station_id is not None and isinstance(station_id, int)):
-            err_msg = '"station_id" field value must be an integer'
+        if not isinstance(station_id, int):
+            err_msg = 'Missing "station_id"'
             self.logger.error(err_msg)
             raise ValueError(err_msg)
 
         # Get the station data (errors, etas etc.) from the Curlbus service
         station_data_obj = self._get_station_data(station_id)
 
-        # Normalize etas format
+        # Normalize ETAs format
         self._make_eta_objects(station_data_obj, query_params_obj)
         self.send_notification()
 
@@ -149,6 +152,12 @@ class BusEtaNotifier(ABC):
     @abstractmethod
     def send_notification(self):
         """
-        Send a notification with bus ETAs
+        Send a notification with bus ETAs info stored in "self.etas" attribute
+        Example of "self.etas" value:
+            {'errors': None,
+             'line_number_2_etas': {1: [11, 23], 2: [16]},
+             'station_city': 'Tel Aviv',
+             'station_name': 'Example Station',
+             'timestamp': '2020-06-17 04:36:44+03:00'}
         """
         raise NotImplementedError
