@@ -1,6 +1,6 @@
 A simple abstract class for querying https://curlbus.app service periodically.
 
-https://curlbus.app is a service that provides an information about bus times arrivals for Israeli public transport
+https://curlbus.app is a service that provides an information about bus arrivals for Israeli public transport
 service providers.
 
 #### Installation:
@@ -24,10 +24,10 @@ In order to make this work you have to implement two methods:
  
  Example:
 ```python
-from bus_eta_notifier import BusEtaNotifier
+from bus_notify.bus_arrivals_notifier import BusArrivalsNotifier
 
 
-class TestNotifier(BusEtaNotifier):
+class TestNotifier(BusArrivalsNotifier):
     
     def __init__(self):
         super(TestNotifier, self).__init__()
@@ -36,38 +36,40 @@ class TestNotifier(BusEtaNotifier):
         return {'station_id': 12345, 'line_numbers': [21, 42]}
 
     def send_notification(self):
-        print(self.etas)
+        print(self.arrivals)
 
 
 if __name__ == '__main__':
     notifier = TestNotifier()
-    notifier.run(service_query_interval=10)
+    notifier.run(service_query_interval=20)
 
 ```
 
-Note: you can provide the `service_query_interval` parameter to the `run` method, it's amount of seconds we wait
- between Curlbus queries. The default and minimal value us 10, if the value is 0 then a single query will be performed.
+Note: you can provide the `service_query_interval` parameter to the `run` method, it's amount of seconds to wait
+ between Curlbus queries. The default and minimal value us 10 as there is no point to query Curlbus more often, if the
+  value is 0 then a single query will be performed.
 
-The query result will be stored in the `etas` attribute of the class instance and can be used in the `send_notification
-` method. 
+The query result will be stored in the `arrivals` attribute of the class instance and can be used in the
+ `send_notification` method. 
 
-Example of the `etas` property content:
+Example of the `arrivals` property content:
 ```
 {'errors': None,
- 'line_number_2_etas': {42: [0, 6, 12]},
- 'station_city': 'Some city',
- 'station_name': 'Some station name',
- 'timestamp': '2020-05-17 15:45:03+03:00'}
+ 'line_num_2_mins_remained': {1: [11, 23], 2: [16]},
+ 'station_city': 'Tel Aviv',
+ 'station_name': 'Example Station',
+ 'timestamp': '2020-06-17 04:36:44+03:00'}
 ```
 
-ETA object fields:
+Arrivals object fields:
 
 `errors` is field that contains errors returned by the Curlbus service or `None`.
 
-`line_number_2_etas` is a dict that contains a mapping between line numbers and its ETAs list. Note: `line_number_2_etas
-` keys are integers.
+`line_num_2_mins_remained` is a dict that contains a mapping between line number and a list which contains values of
+ how many minutes remained until the bus arrival.
+ Note: `line_number_2_etas` keys are integers.
 
-`line_number` is an integer that represents a line (bus) number.
+`station_city` is a string that contains the station city name.
 
 `station_name` is a string that contains the name of the station.
 
