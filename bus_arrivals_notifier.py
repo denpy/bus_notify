@@ -85,7 +85,7 @@ class BusArrivalsNotifier(ABC):
             mins_until_bus_arrives = relativedelta(parser.parse(line_info['eta']), datetime.now(tz.tzlocal())).minutes
 
             # Sometimes amount of minutes remained until bus arrives maybe a negative number or 0 in this case it
-            # usually means that the bus has arrived to the station or just has leaved
+            # usually means that the bus has arrived to the station or just has left
             mins_until_bus_arrives = 0 if mins_until_bus_arrives <= 0 else mins_until_bus_arrives
 
             # Check maybe we already have saved how many minutes remained for this line, if we already have let's append
