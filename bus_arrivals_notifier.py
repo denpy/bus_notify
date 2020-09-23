@@ -68,15 +68,16 @@ class BusArrivalsNotifier(ABC):
         arrivals['station_city'] = station_info_obj['stop_info']['address']['city']
         arrivals['station_name'] = station_info_obj['stop_info']['name']['EN']
 
-        # Get line numbers and station ID we
+        # Get line numbers and station ID
         line_numbers = query_params_obj.get('line_numbers')
         station_id = str(query_params_obj['station_id'])
 
-        # Sort the list of station arrivals according to the "line_name"
+        # Sort the list of station arrivals according to the "line_name" (which is actually a number, but Curlbus calls
+        # it as "line_name" - it's a str)
         station_arrivals = sorted(station_info_obj['visits'][station_id], key=lambda info: int(info['line_name']))
         for line_info in station_arrivals:
             arrivals['timestamp'] = line_info['timestamp']
-            line_number = int(line_info['line_name'])  # Curlbus calls the line number as "line_name" (it's a str)
+            line_number = int(line_info['line_name'])
             if line_numbers and (line_number not in line_numbers):
                 # Skip the current "line_number" since it's not in a list of line numbers we interested in
                 continue
@@ -140,8 +141,8 @@ class BusArrivalsNotifier(ABC):
 
             elapsed = round(default_timer() - start)
             if query_interval < elapsed:
-                # If we got here i.e. it took longer than service query interval to get the data and send the
-                # notification, in such case we should not sleep
+                # If we got here it means that to get the data and send the notification took longer than service
+                # query interval, in such case we should not sleep
                 logger.warning(f'It took {elapsed} sec to get the data and sent the notification, will not sleep.')
                 continue
 
