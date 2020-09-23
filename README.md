@@ -46,8 +46,8 @@ if __name__ == '__main__':
 ```
 
 Note: you can provide the `service_query_interval` parameter to the `run` method, it's amount of seconds to wait
- between Curlbus queries. The default and minimal value us 10 as there is no point to query Curlbus more often, if the
-  value is 0 then a single query will be performed.
+ between Curlbus queries. The default and minimal value is 10 as there is no point to query Curlbus more often, if the
+  value is 0 then a single (non-periodic) query will be performed.
 
 The query result will be stored in the `arrivals` attribute of the class instance and can be used in the
  `send_notification` method. 
@@ -67,7 +67,7 @@ Arrivals object fields:
 
 `line_num_2_mins_remained` is a dict that contains a mapping between line number and a list which contains values of
  how many minutes remained until the bus arrival.
- Note: `line_number_2_etas` keys are integers.
+ Note: `line_num_2_mins_remained` keys are integers.
 
 `station_city` is a string that contains the station city name.
 
